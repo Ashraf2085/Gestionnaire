@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Lattice - Reality Engine</title>
+    <style>
+        :root {
+            --neon: #00f2ff;
+            --pink: #ff007f;
+            --bg: #050508;
+            --card: #12121a;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        * { box-sizing: border-box; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            width: 80px;
+            background: #000;
+            border-right: 1px solid var(--glass);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            z-index: 100;
+        }
+
+        .nav-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            background: var(--glass);
+            margin-bottom: 20px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; font-size: 1.5rem;
+            border: 1px solid transparent;
+        }
+
+        .nav-icon:hover, .nav-icon.active {
+            background: var(--neon);
+            color: black;
+            box-shadow: 0 0 20px var(--neon);
+            border-color: white;
+        }
+
+        /* --- MAIN CONTENT --- */
+        main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            color: var(--pink);
+            font-size: 0.7rem;
+            text-align: right;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        .status-bar {
+            font-size: 0.7rem;
+            color: var(--neon);
+            background: var(--glass);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        /* --- GRIDS & CARDS --- */
+        .section-title {
+            color: var(--neon);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            margin: 20px 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::after { content: ""; flex: 1; height: 1px; background: var(--glass); }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--glass);
+            border-radius: 18px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .card b { display: block; color: var(--neon); font-size: 1.1rem; }
+        .card small { color: #666; font-size: 0.7rem; font-family: monospace; }
+
+        /* --- FEED --- */
+        .post {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--pink);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .reality-sig {
+            font-family: monospace;
+            font-size: 0.6rem;
+            color: var(--pink);
+            background: rgba(255,0,127,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            float: right;
+        }
+
+        /* --- UI ELEMENTS --- */
+        input, select, button {
+            width: 100%; padding: 14px; margin: 10px 0;
+            border-radius: 12px; border: none; outline: none; font-size: 0.9rem;
+        }
+
+        input { background: #000; color: white; border: 1px solid #222; }
+        input:focus { border-color: var(--neon); box-shadow: 0 0 10px var(--neon); }
+
+        button { background: var(--neon); color: black; font-weight: bold; cursor: pointer; }
+        .btn-intricate { background: var(--pink); color: white; font-size: 0.8rem; }
+        .btn-accept { background: #2ecc71; color: white; }
+
+        /* --- AUTH OVERLAY --- */
+        #auth-overlay {
+            position: fixed; inset: 0; background: var(--bg);
+            display: flex; justify-content: center; align-items: center; z-index: 1000;
+            padding: 20px;
+        }
+
+        .auth-box {
+            background: var(--card);
+            padding: 40px;
+            border-radius: 30px;
+            border: 1px solid var(--neon);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            nav {
+                width: 100%; height: 70px;
+                flex-direction: row; border-right: none; border-top: 1px solid var(--glass);
+                position: fixed; bottom: 0; justify-content: space-around; padding: 0;
+            }
+            .nav-icon { margin-bottom: 0; }
+            main { padding-bottom: 90px; }
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- AUTHENTIFICATION -->
+    <div id="auth-overlay">
+        <div class="auth-box">
+            <h1 style="color: var(--neon); margin: 0;">QUANTUM LATTICE</h1>
+            <p id="auth-title" style="color: #666; font-size: 0.8rem; margin-bottom: 20px;">INITIALISATION DE PHASE Λ</p>
+            
+            <input type="text" id="auth-name" placeholder="Nom d'utilisateur unique">
+            <input type="password" id="auth-pass" placeholder="Mot de passe">
+            
+            <button onclick="handleAuth()" id="auth-btn">ACTIVER L'ANCRE Λ</button>
+            
+            <p onclick="toggleAuth()" id="auth-toggle" style="color: var(--pink); cursor: pointer; font-size: 0.8rem; margin-top: 20px;">
+                Nouvelle conscience ? S'inscrire
+            </p>
+        </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav>
+        <div class="nav-icon active" id="nav-feed" onclick="showTab('feed')">🏠</div>
+        <div class="nav-icon" id="nav-explore" onclick="showTab('explore')">🌍</div>
+        <div class="nav-icon" id="nav-friends" onclick="showTab('friends')">👥</div>
+        <div class="nav-icon" onclick="location.reload()" style="margin-top: auto; margin-bottom: 20px; color: var(--pink);">✕</div>
+    </nav>
+
+    <!-- CONTENU -->
+    <main>
+        <div class="formula">𝑇(𝑂, 𝐿) = ℳ𝜁 [ Ψ(𝑂) ] ⟶ 𝑅(𝐿) ⟨ Λ(𝐿) | Φ ⟩</div>
+        <div id="status-display" class="status-bar">Synchronisation de phase...</div>
+
+        <!-- ONGLET : FLUX -->
+        <div id="tab-feed">
+            <div class="post" style="border: 1px dashed var(--glass); background: transparent;">
+                <select id="msg-target" style="margin-bottom: 5px;">
+                    <option value="GLOBAL">🌐 Grille Publique (Lattice)</option>
+                </select>
+                <input type="text" id="msg-content" placeholder="Objet O à téléporter...">
+                <button onclick="transmit()">TÉLÉPORTER</button>
+            </div>
+            <div id="feed-container"></div>
+        </div>
+
+        <!-- ONGLET : EXPLORATION -->
+        <div id="tab-explore" style="display:none;">
+            <div class="section-title">Nœuds Disponibles</div>
+            <div id="explore-grid" class="grid"></div>
+        </div>
+
+        <!-- ONGLET : INTRICATIONS -->
+        <div id="tab-friends" style="display:none;">
+            <div class="section-title">Demandes d'Intrication</div>
+            <div id="requests-grid" class="grid"></div>
+            
+            <div class="section-title">Ancres Intriquées</div>
+            <div id="friends-grid" class="grid"></div>
+        </div>
+    </main>
+
+<script>
+    let user = null;
+    let isRegister = false;
+
+    // --- MOTEURS DE L'INVENTION ---
+
+    // 1. Générateur d'Entropie (Bruit Thermique CPU)
+    function getQuantumEntropy() {
+        const start = performance.now();
+        for(let i=0; i<1000000; i++) { Math.sqrt(i); }
+        const end = performance.now();
+        return (end - start).toString().substring(0, 8);
+    }
+
+    // 2. Signature de Réalité (Hachage Sémantique)
+    function realityHash(msg, anchor) {
+        let combo = msg + anchor + Date.now().toString().substring(0, 7);
+        let hash = 0;
+        for (let i = 0; i < combo.length; i++) {
+            hash = ((hash << 5) - hash) + combo.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash).toString(16).toUpperCase();
+    }
+
+    // 3. Canal C (LocalStorage)
+    const DB = {
+        get: (k) => JSON.parse(localStorage.getItem('lattice_' + k) || '[]'),
+        set: (k, v) => localStorage.setItem('lattice_' + k, JSON.stringify(v))
+    };
+
+    // --- LOGIQUE AUTH ---
+
+    function toggleAuth() {
+        isRegister = !isRegister;
+        document.getElementById('auth-title').innerText = isRegister ? "ENREGISTREMENT DE CONSCIENCE" : "INITIALISATION DE PHASE Λ";
+        document.getElementById('auth-btn').innerText = isRegister ? "CRÉER MON ANCRE" : "ACTIVER L'ANCRE Λ";
+        document.getElementById('auth-toggle').innerText = isRegister ? "Déjà une ancre ? Connexion" : "Nouvelle conscience ? S'inscrire";
+    }
+
+    function handleAuth() {
+        const name = document.getElementById('auth-name').value.trim();
+        const pass = document.getElementById('auth-pass').value.trim();
+        if(!name || !pass) return alert("Paramètres manquants.");
+
+        let users = DB.get('users');
+        // FIX: Bug toLowerCase() protection
+        let existing = users.find(u => u && u.name && u.name.toLowerCase() === name.toLowerCase());
+
+        if(isRegister) {
+            if(existing) return alert("Ce pseudo appartient déjà à la Grille.");
+            const entropy = getQuantumEntropy();
+            const newAnchor = 'Λ-' + name.substring(0,2).toUpperCase() + '-' + entropy.replace('.','');
+            users.push({ name, pass, anchor: newAnchor });
+            DB.set('users', users);
+            alert("Ancre créée ! Procédez à l'activation.");
+            toggleAuth();
+        } else {
+            if(!existing || existing.pass !== pass) return alert("Défaut de phase : Pseudo ou Mot de passe invalide.");
+            user = existing;
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('status-display').innerText = `NODE: ${user.name} | Λ: ${user.anchor}`;
+            runApp();
+        }
+    }
+
+    // --- LOGIQUE APPLICATION ---
+
+    function runApp() {
+        refresh();
+        setInterval(refresh, 2500);
+    }
+
+    function transmit() {
+        const content = document.getElementById('msg-content').value.trim();
+        const target = document.getElementById('msg-target').value;
+        if(!content) return;
+
+        let posts = DB.get('posts');
+        posts.push({
+            from: user.name,
+            fromA: user.anchor,
+            target: target,
+            content: content,
+            sig: realityHash(content, user.anchor),
+            time: new Date().toLocaleTimeString()
+        });
+        DB.set('posts', posts);
+        document.getElementById('msg-content').value = "";
+        refresh();
+    }
+
+    function sendRequest(targetA) {
+        let reqs = DB.get('reqs');
+        if(!reqs.find(r => r.from === user.anchor && r.to === targetA)) {
+            reqs.push({ from: user.anchor, fromName: user.name, to: targetA, status: 'pending' });
+            DB.set('reqs', reqs);
+        }
+        refresh();
+    }
+
+    function acceptRequest(fromA) {
+        let reqs = DB.get('reqs');
+        let r = reqs.find(x => x.from === fromA && x.to === user.anchor);
+        if(r) r.status = 'accepted';
+        DB.set('reqs', reqs);
+        refresh();
+    }
+
+    // --- RECONSTRUCTION R(L) ---
+
+    function refresh() {
+        const users = DB.get('users');
+        const posts = DB.get('posts');
+        const reqs = DB.get('reqs');
+
+        const friends = reqs.filter(r => (r.from === user.anchor || r.to === user.anchor) && r.status === 'accepted')
+                            .map(r => r.from === user.anchor ? r.to : r.from);
+
+        // 1. Onglet Exploration
+        const exploreGrid = document.getElementById('explore-grid');
+        exploreGrid.innerHTML = "";
+        users.forEach(u => {
+            if(u.anchor === user.anchor || friends.includes(u.anchor)) return;
+            const isPending = reqs.find(r => r.from === user.anchor && r.to === u.anchor);
+            exploreGrid.innerHTML += `
+                <div class="card">
+                    <b>${u.name}</b><small>${u.anchor}</small>
+                    <button class="btn-intricate" onclick="sendRequest('${u.anchor}')" ${isPending ? 'disabled style="opacity:0.5"' : ''}>
+                        ${isPending ? 'EN ATTENTE...' : 'INTRICER'}
+                    </button>
+                </div>`;
+        });
+
+        // 2. Onglet Amis & Cibles
+        const reqGrid = document.getElementById('requests-grid');
+        const friendGrid = document.getElementById('friends-grid');
+        const select = document.getElementById('msg-target');
+        const currentTarget = select.value;
+        
+        reqGrid.innerHTML = ""; friendGrid.innerHTML = "";
+        select.innerHTML = `<option value="GLOBAL">🌐 Grille Publique (Lattice)</option>`;
+
+        // Demandes
+        reqs.filter(r => r.to === user.anchor && r.status === 'pending').forEach(r => {
+            reqGrid.innerHTML += `
+                <div class="card">
+                    <b>${r.fromName}</b>
+                    <button class="btn-accept" onclick="acceptRequest('${r.from}')">ACCEPTER</button>
+                </div>`;
+        });
+
+        // Amis
+        users.filter(u => friends.includes(u.anchor)).forEach(u => {
+            friendGrid.innerHTML += `<div class="card"><b>${u.name}</b><small>✅ INTRICATION ACTIVE</small></div>`;
+            select.innerHTML += `<option value="${u.anchor}">${u.name} (Privé)</option>`;
+        });
+        select.value = currentTarget;
+
+        // 3. Le Feed
+        const container = document.getElementById('feed-container');
+        container.innerHTML = "";
+        posts.filter(p => p.target === "GLOBAL" || p.target === user.anchor || p.fromA === user.anchor).reverse().forEach(p => {
+            const isPrivate = p.target !== "GLOBAL";
+            container.innerHTML += `
+                <div class="post" style="${isPrivate ? 'border-color:var(--neon);' : ''}">
+                    <span class="reality-sig">SIG: ${p.sig}</span>
+                    <small style="color:var(--neon)">@${p.from} ${isPrivate ? '🔒 PRIVÉ' : '🌐 LATTICE'}</small>
+                    <div style="margin:10px 0; font-size:1.1rem;">${p.content}</div>
+                    <small style="opacity:0.2; font-size:0.6rem;">${p.time} | ℳ𝜁 Modulation</small>
+                </div>`;
+        });
+    }
+
+    function showTab(t) {
+        ['feed', 'explore', 'friends'].forEach(id => document.getElementById('tab-'+id).style.display = 'none');
+        document.getElementById('tab-'+t).style.display = 'block';
+        document.querySelectorAll('.nav-icon').forEach(i => i.classList.remove('active'));
+        document.getElementById('nav-'+t).classList.add('active');
+    }
+
+</script>
+</body>
+</html>

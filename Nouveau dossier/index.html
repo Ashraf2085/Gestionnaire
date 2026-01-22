@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradeMaster - Gestionnaire de Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  background-image: radial-gradient(#e0e7ff 1px, transparent 1px);
+  background-size: 24px 24px;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-main);
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+}
+
+/* --- Header & Average Card --- */
+.header-card {
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
+  padding: 30px;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-card h1 { margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600; opacity: 0.9; }
+
+.avg-display {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.avg-label { font-size: 0.9rem; opacity: 0.8; letter-spacing: 1px; text-transform: uppercase; }
+
+/* --- Form --- */
+.app-card {
+  background: var(--surface);
+  padding: 24px;
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Titre prend plus de place */
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  background: #fdfdfd;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+textarea { resize: vertical; min-height: 80px; margin-bottom: 12px; }
+
+button.btn-add {
+  width: 100%;
+  padding: 14px;
+  background: var(--text-main);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+button.btn-add:active { transform: scale(0.98); }
+button.btn-add:hover { opacity: 0.9; }
+
+/* --- List --- */
+ul { list-style: none; padding: 0; margin-top: 30px; }
+
+.note-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: slideIn 0.3s ease-out;
+}
+
+.note-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05);
+  border-color: var(--primary);
+}
+
+.note-info { flex-grow: 1; margin-right: 16px; }
+
+.note-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.note-subject { font-weight: 700; color: var(--text-main); font-size: 1.1rem; }
+.note-coef { font-size: 0.75rem; background: var(--bg); padding: 2px 6px; border-radius: 6px; color: var(--text-muted); border: 1px solid var(--border); }
+
+.note-desc { color: var(--text-muted); font-size: 0.9rem; margin: 0; line-height: 1.4; }
+.note-date { display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 6px; }
+
+.note-grade-box {
+  text-align: center;
+  min-width: 70px;
+}
+
+.grade-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  color: white;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+.grade-badge.good { background: var(--success); }
+.grade-badge.ok { background: var(--warning); }
+.grade-badge.bad { background: var(--danger); }
+
+.actions { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
+.btn-icon {
+  background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px;
+  transition: color 0.2s;
+}
+.btn-icon:hover { color: var(--primary); }
+.btn-icon.delete:hover { color: var(--danger); }
+
+/* --- Utilities --- */
+.empty-state { text-align: center; color: var(--text-muted); margin-top: 40px; font-style: italic; }
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: #333; color: white; padding: 12px 24px; border-radius: 50px;
+  box-shadow: 0 10px 15px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .note-item { flex-direction: column; align-items: flex-start; }
+  .note-grade-box { align-self: flex-end; margin-top: -30px; }
+  .actions { width: 100%; margin-top: 10px; border-top: 1px solid var(--bg); padding-top: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  
+  <div class="header-card">
+    <h1>Moyenne Générale</h1>
+    <div class="avg-display" id="avgDisplay">--</div>
+    <div class="avg-label">sur 20</div>
+  </div>
+
+  <div class="app-card">
+    <form id="noteForm">
+      <div class="form-grid">
+        <input type="text" id="subject" placeholder="Matière (ex: Maths)" required>
+        <input type="number" id="coef" placeholder="Coef" value="1" min="0.5" step="0.5" required title="Coefficient">
+      </div>
+      
+      <div class="form-grid">
+        <input type="text" id="scoreInput" placeholder="Note (ex: 15 ou 15/20)" required>
+        <input type="hidden" id="editId"> 
+      </div>
+
+      <textarea id="comment" placeholder="Détails du devoir, chapitre... (optionnel)"></textarea>
+      
+      <button class="btn-add" id="submitBtn">Ajouter la note</button>
+    </form>
+
+    <ul id="noteList"></ul>
+    <div id="emptyState" class="empty-state">Aucune note pour le moment. À toi de jouer ! 📝</div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast">Action effectuée</div>
+
+<script>
+/**
+ * Logique de l'application
+ */
+const form = document.getElementById("noteForm");
+const list = document.getElementById("noteList");
+const avgDisplay = document.getElementById("avgDisplay");
+const emptyState = document.getElementById("emptyState");
+const toastEl = document.getElementById("toast");
+const submitBtn = document.getElementById("submitBtn");
+
+// État initial
+let notes = JSON.parse(localStorage.getItem("gradeMaster_notes")) || [];
+
+// --- Utilitaires ---
+
+// Convertit n'importe quelle entrée (15, 15/20, 3/5) en note sur 20
+function normalizeScore(value) {
+  const str = String(value).trim();
+  if (str.includes("/")) {
+    const [num, den] = str.split("/").map(Number);
+    if (isNaN(num) || isNaN(den) || den === 0) return null;
+    return (num / den) * 20;
+  }
+  const num = Number(str.replace(',', '.')); // support virgule
+  return isNaN(num) ? null : num;
+}
+
+// Couleur selon la note
+function getScoreClass(score) {
+  if (score >= 16) return "good";
+  if (score >= 10) return "ok";
+  return "bad";
+}
+
+// Affichage d'un toast
+function showToast(message) {
+  toastEl.textContent = message;
+  toastEl.classList.add("show");
+  setTimeout(() => toastEl.classList.remove("show"), 3000);
+}
+
+// Sauvegarde
+function save() {
+  localStorage.setItem("gradeMaster_notes", JSON.stringify(notes));
+  render();
+}
+
+// --- Calculs ---
+
+function calculateAverage() {
+  if (notes.length === 0) return "--";
+  
+  let totalScore = 0;
+  let totalCoef = 0;
+
+  notes.forEach(n => {
+    totalScore += n.score * n.coef;
+    totalCoef += n.coef;
+  });
+
+  return totalCoef === 0 ? 0 : (totalScore / totalCoef).toFixed(2);
+}
+
+// --- Rendu ---
+
+function render() {
+  list.innerHTML = "";
+  
+  if (notes.length === 0) {
+    emptyState.style.display = "block";
+    avgDisplay.textContent = "--";
+    return;
+  }
+  
+  emptyState.style.display = "none";
+
+  // Trier par date (plus récent en haut)
+  const sortedNotes = [...notes].sort((a, b) => b.date - a.date);
+
+  sortedNotes.forEach((note) => {
+    const li = document.createElement("li");
+    li.className = "note-item";
+    
+    // Formatage de la date
+    const dateObj = new Date(note.date);
+    const dateStr = dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+    li.innerHTML = `
+      <div class="note-info">
+        <div class="note-header">
+          <span class="note-subject">${escapeHtml(note.subject)}</span>
+          <span class="note-coef">Coef ${note.coef}</span>
+        </div>
+        <p class="note-desc">${note.comment ? escapeHtml(note.comment) : "<em>Pas de commentaire</em>"}</p>
+        <span class="note-date">Ajouté le ${dateStr}</span>
+      </div>
+      
+      <div class="note-grade-box">
+        <div class="grade-badge ${getScoreClass(note.score)}">
+          ${parseFloat(note.score.toFixed(2)).toString().replace('.', ',')}
+        </div>
+        <div class="actions">
+          <button class="btn-icon" onclick="editNote(${note.id})" title="Modifier">✏️</button>
+          <button class="btn-icon delete" onclick="deleteNote(${note.id})" title="Supprimer">🗑️</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(li);
+  });
+
+  // Animation compteur moyenne
+  const newAvg = calculateAverage();
+  avgDisplay.textContent = newAvg.replace('.', ',');
+}
+
+// Sécurité XSS simple
+function escapeHtml(text) {
+  if (!text) return text;
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// --- Actions ---
+
+window.deleteNote = function(id) {
+  if(confirm("Voulez-vous vraiment supprimer cette note ?")) {
+    notes = notes.filter(n => n.id !== id);
+    save();
+    showToast("Note supprimée 🗑️");
+  }
+};
+
+window.editNote = function(id) {
+  const note = notes.find(n => n.id === id);
+  if(!note) return;
+
+  // Remplir le formulaire
+  document.getElementById("subject").value = note.subject;
+  document.getElementById("coef").value = note.coef;
+  document.getElementById("scoreInput").value = note.score; // On remet la note sur 20
+  document.getElementById("comment").value = note.comment;
+  document.getElementById("editId").value = note.id;
+
+  submitBtn.textContent = "Modifier la note";
+  submitBtn.style.background = "var(--primary)";
+  
+  // Scroll vers le formulaire
+  document.querySelector('.app-card').scrollIntoView({ behavior: 'smooth' });
+};
+
+// Soumission du formulaire
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const subject = document.getElementById("subject").value.trim();
+  const rawScore = document.getElementById("scoreInput").value;
+  const coef = parseFloat(document.getElementById("coef").value);
+  const comment = document.getElementById("comment").value.trim();
+  const editId = document.getElementById("editId").value; // Vide si nouvelle note, ID si édition
+
+  const normalizedScore = normalizeScore(rawScore);
+
+  if (normalizedScore === null || normalizedScore < 0) {
+    alert("Note invalide. Essayez '15' ou '15/20'.");
+    return;
+  }
+  
+  if (isNaN(coef) || coef <= 0) {
+    alert("Le coefficient doit être positif.");
+    return;
+  }
+
+  if (editId) {
+    // Mode Modification
+    const index = notes.findIndex(n => n.id == editId);
+    if (index !== -1) {
+      notes[index] = { 
+        ...notes[index], 
+        subject, 
+        score: normalizedScore, 
+        coef, 
+        comment 
+      };
+      showToast("Note modifiée avec succès ✨");
+    }
+    // Reset bouton
+    submitBtn.textContent = "Ajouter la note";
+    submitBtn.style.background = "var(--text-main)";
+    document.getElementById("editId").value = "";
+  } else {
+    // Mode Ajout
+    const newNote = {
+      id: Date.now(), // ID unique basé sur le temps
+      subject,
+      score: normalizedScore,
+      coef,
+      comment,
+      date: Date.now()
+    };
+    notes.push(newNote);
+    showToast("Note ajoutée ! 🚀");
+  }
+
+  save();
+  form.reset();
+  // Remettre le coef par défaut à 1
+  document.getElementById("coef").value = "1";
+});
+
+// Initialisation
+render();
+
+</script>
+</body>
+</html>
